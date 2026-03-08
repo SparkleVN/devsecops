@@ -112,23 +112,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Trivy
-        timeout-minutes: 5
-        run: |
-          echo "Installing Trivy..."
-          TRIVY_VERSION=0.48.0
-          wget -q https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
-          tar -xzf trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
-          sudo mv trivy /usr/local/bin/trivy
-          rm trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
-          trivy --version
-
-      - name: Run Trivy Dependency Scan
+      - name: Run Trivy Dependency Scan (via Docker)
         continue-on-error: true
         run: |
           mkdir -p reports
-          trivy fs --format json --output reports/trivy-deps.json .
-          trivy fs --severity CRITICAL,HIGH --exit-code 1 .
+          
+          # Run Trivy via Docker container - no installation needed
+          docker run --rm \
+            -v $(pwd):/workspace \
+            -w /workspace \
+            aquasec/trivy:latest fs \
+            --format json --output /workspace/reports/trivy-deps.json \
+            /workspace
+          
+          # Check for CRITICAL/HIGH and fail if found
+          docker run --rm \
+            -v $(pwd):/workspace \
+            -w /workspace \
+            aquasec/trivy:latest fs \
+            --severity CRITICAL,HIGH --exit-code 1 \
+            /workspace
 
       - name: Upload Dependency Scan Results
         if: always()
