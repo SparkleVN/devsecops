@@ -197,7 +197,7 @@ jobs:
 
       - name: Log in to Container Registry
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
       - name: Set lowercase repository name
         id: repo
@@ -214,11 +214,11 @@ jobs:
           IMAGE_SHA="${{ env.REGISTRY }}/${{ steps.repo.outputs.lowercase }}:${{ github.sha }}"
           
           echo "Building Docker image..."
-          docker build -t ${IMAGE_URL} -t ${IMAGE_SHA} .
+          sudo docker build -t ${IMAGE_URL} -t ${IMAGE_SHA} .
           
           echo "Pushing to registry..."
-          docker push ${IMAGE_URL}
-          docker push ${IMAGE_SHA}
+          sudo docker push ${IMAGE_URL}
+          sudo docker push ${IMAGE_SHA}
           
           echo "Build completed successfully!"
           echo "image-url=${IMAGE_URL}" >> $GITHUB_OUTPUT
@@ -247,16 +247,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Login to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
       - name: Pull Docker Image
         run: |
           IMAGE_URL="${{ env.REGISTRY }}/${{ needs.docker-build.outputs.lowercase-repo }}:latest"
-          docker pull ${IMAGE_URL}
+          sudo docker pull ${IMAGE_URL}
 
       - name: Run Trivy Image Scan (via Docker)
         continue-on-error: true
@@ -265,14 +262,14 @@ jobs:
           IMAGE_URL="${{ env.REGISTRY }}/${{ needs.docker-build.outputs.lowercase-repo }}:latest"
           
           # Run Trivy via Docker container - no installation needed
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+          sudo docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
             -v $(pwd)/reports:/reports \
             aquasec/trivy:latest image \
             --format json --output /reports/trivy-image.json \
             ${IMAGE_URL}
           
           # Check for CRITICAL/HIGH and fail if found
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+          sudo docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
             aquasec/trivy:latest image \
             --severity CRITICAL,HIGH --exit-code 1 \
             ${IMAGE_URL}
@@ -310,25 +307,22 @@ jobs:
       - name: Deploy to Local Docker
         run: |
           echo "Deploying application locally..."
-          echo "Image: ${{ needs.docker-build.outputs.image-url }}"
-          echo "Digest: ${{ needs.docker-build.outputs.image-digest }}"
-
-          # Use lowercase repository name from docker-build job
+          
           IMAGE_URL="${{ env.REGISTRY }}/${{ needs.docker-build.outputs.lowercase-repo }}:latest"
           echo "Docker Image URL: ${IMAGE_URL}"
 
           # Try to pull the image from registry, fallback to local build if fails
-          if ! docker pull ${IMAGE_URL}; then
+          if ! sudo docker pull ${IMAGE_URL}; then
             echo "Failed to pull from registry, building locally..."
-            docker build -t ${IMAGE_URL} .
+            sudo docker build -t ${IMAGE_URL} .
           fi
 
           # Stop existing container if running
-          docker stop cicd-app 2>/dev/null || true
-          docker rm cicd-app 2>/dev/null || true
+          sudo docker stop cicd-app 2>/dev/null || true
+          sudo docker rm cicd-app 2>/dev/null || true
 
           # Run the new container
-          docker run -d \
+          sudo docker run -d \
             --name cicd-app \
             -p 3000:3000 \
             ${IMAGE_URL}
