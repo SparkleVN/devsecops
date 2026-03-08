@@ -195,18 +195,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Log in to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          # Alternative: Use Personal Access Token if GITHUB_TOKEN fails
-          # username: ${{ secrets.CR_USER }}
-          # password: ${{ secrets.CR_PAT }}
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
       - name: Set lowercase repository name
         id: repo
@@ -216,35 +207,22 @@ jobs:
           echo "Repository: ${{ github.repository }}"
           echo "Lowercase: $LOWERCASE_REPO"
 
-      - name: Debug Registry Info
-        run: |
-          echo "Registry: ${{ env.REGISTRY }}"
-          echo "Image Name: ${{ env.IMAGE_NAME }}"
-          echo "Lowercase Repo: ${{ steps.repo.outputs.lowercase }}"
-          echo "Actor: ${{ github.actor }}"
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ steps.repo.outputs.lowercase }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Docker image
+      - name: Build Docker image
         id: build
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+        run: |
+          IMAGE_URL="${{ env.REGISTRY }}/${{ steps.repo.outputs.lowercase }}:latest"
+          IMAGE_SHA="${{ env.REGISTRY }}/${{ steps.repo.outputs.lowercase }}:${{ github.sha }}"
+          
+          echo "Building Docker image..."
+          docker build -t ${IMAGE_URL} -t ${IMAGE_SHA} .
+          
+          echo "Pushing to registry..."
+          docker push ${IMAGE_URL}
+          docker push ${IMAGE_SHA}
+          
+          echo "Build completed successfully!"
+          echo "image-url=${IMAGE_URL}" >> $GITHUB_OUTPUT
+          echo "image-sha=${IMAGE_SHA}" >> $GITHUB_OUTPUT
 
       - name: Notify Telegram on Docker Build Failure
         if: failure()
