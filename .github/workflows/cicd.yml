@@ -196,8 +196,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Log in to Container Registry
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+          echo "${GITHUB_TOKEN}" | sudo docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
       - name: Set lowercase repository name
         id: repo
@@ -247,8 +249,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Login to Container Registry
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+          echo "${GITHUB_TOKEN}" | sudo docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
       - name: Pull Docker Image
         run: |
