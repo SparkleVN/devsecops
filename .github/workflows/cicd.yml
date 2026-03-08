@@ -87,8 +87,8 @@ jobs:
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d parse_mode="Markdown" \
-            -d text="*SECURITY ALERT*%0A%0A*Repository:* \`${{ github.repository }}\`%0A*Branch:* \`${{ github.ref_name }}\`%0A*Commit:* \`${{ github.sha }}\`%0A*Author:* ${{ github.actor }}%0A%0AGitleaks found potential secrets in your code!%0APlease review your commit and remove any hardcoded secrets.%0A%0A[View Action Details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            -d parse_mode="HTML" \
+            -d text="<b>SECURITY ALERT</b>%0A%0A<b>Repository:</b> <code>${{ github.repository }}</code>%0A<b>Branch:</b> <code>${{ github.ref_name }}</code>%0A<b>Commit:</b> <code>${{ github.sha }}</code>%0A<b>Author:</b> ${{ github.actor }}%0A%0AGitleaks found potential secrets in your code!%0APlease review your commit and remove any hardcoded secrets.%0A%0A<a href=\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\">View Action Details</a>"
 
 
   # ========================
@@ -137,8 +137,8 @@ jobs:
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d parse_mode="Markdown" \
-            -d text="*DEPENDENCY VULNERABILITIES FOUND*%0A%0A*Repository:* \`${{ github.repository }}\`%0A*Branch:* \`${{ github.ref_name }}\`%0A*Commit:* \`${{ github.sha }}\`%0A*Author:* ${{ github.actor }}%0A%0ATrivy found CRITICAL or HIGH vulnerabilities in dependencies!%0APlease review and update affected packages.%0A%0A[View Action Details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            -d parse_mode="HTML" \
+            -d text="<b>DEPENDENCY VULNERABILITIES FOUND</b>%0A%0A<b>Repository:</b> <code>${{ github.repository }}</code>%0A<b>Branch:</b> <code>${{ github.ref_name }}</code>%0A<b>Commit:</b> <code>${{ github.sha }}</code>%0A<b>Author:</b> ${{ github.actor }}%0A%0ATrivy found CRITICAL or HIGH vulnerabilities in dependencies!%0APlease review and update affected packages.%0A%0A<a href=\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\">View Action Details</a>"
 
 
   # ========================
@@ -173,8 +173,8 @@ jobs:
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d parse_mode="Markdown" \
-            -d text="*BUILD FAILED*%0A%0A*Repository:* \`${{ github.repository }}\`%0A*Branch:* \`${{ github.ref_name }}\`%0A*Commit:* \`${{ github.sha }}\`%0A*Author:* ${{ github.actor }}%0A%0ABuild or tests failed during CI phase.%0A%0A[View Action Details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            -d parse_mode="HTML" \
+            -d text="<b>BUILD FAILED</b>%0A%0A<b>Repository:</b> <code>${{ github.repository }}</code>%0A<b>Branch:</b> <code>${{ github.ref_name }}</code>%0A<b>Commit:</b> <code>${{ github.sha }}</code>%0A<b>Author:</b> ${{ github.actor }}%0A%0ABuild or tests failed during CI phase.%0A%0A<a href=\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\">View Action Details</a>"
 
 
   # ========================
@@ -229,8 +229,8 @@ jobs:
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d parse_mode="Markdown" \
-            -d text="*DOCKER BUILD FAILED*%0A%0A*Repository:* \`${{ github.repository }}\`%0A*Branch:* \`${{ github.ref_name }}\`%0A*Commit:* \`${{ github.sha }}\`%0A*Author:* ${{ github.actor }}%0A%0ADocker image build/push failed during CD phase.%0A%0A[View Action Details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            -d parse_mode="HTML" \
+            -d text="<b>DOCKER BUILD FAILED</b>%0A%0A<b>Repository:</b> <code>${{ github.repository }}</code>%0A<b>Branch:</b> <code>${{ github.ref_name }}</code>%0A<b>Commit:</b> <code>${{ github.sha }}</code>%0A<b>Author:</b> ${{ github.actor }}%0A%0ADocker image build/push failed during CD phase.%0A%0A<a href=\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\">View Action Details</a>"
 
 
   # ========================
@@ -287,8 +287,8 @@ jobs:
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d parse_mode="Markdown" \
-            -d text="*CONTAINER IMAGE VULNERABILITIES FOUND*%0A%0A*Repository:* \`${{ github.repository }}\`%0A*Branch:* \`${{ github.ref_name }}\`%0A*Image:* \`${{ needs.docker-build.outputs.lowercase-repo }}:latest\`%0A*Author:* ${{ github.actor }}%0A%0ATrivy found CRITICAL or HIGH vulnerabilities in Docker image!%0APlease review base image and dependencies.%0A%0A[View Action Details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            -d parse_mode="HTML" \
+            -d text="<b>CONTAINER IMAGE VULNERABILITIES FOUND</b>%0A%0A<b>Repository:</b> <code>${{ github.repository }}</code>%0A<b>Branch:</b> <code>${{ github.ref_name }}</code>%0A<b>Image:</b> <code>${{ needs.docker-build.outputs.lowercase-repo }}:latest</code>%0A<b>Author:</b> ${{ github.actor }}%0A%0ATrivy found CRITICAL or HIGH vulnerabilities in Docker image!%0APlease review base image and dependencies.%0A%0A<a href=\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\">View Action Details</a>"
 
 
   # ========================
@@ -338,8 +338,8 @@ jobs:
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d parse_mode="Markdown" \
-            -d text="*DEPLOYMENT FAILED*%0A%0A*Repository:* \`${{ github.repository }}\`%0A*Branch:* \`${{ github.ref_name }}\`%0A*Commit:* \`${{ github.sha }}\`%0A*Author:* ${{ github.actor }}%0A%0AApplication deployment failed.%0A%0A[View Action Details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            -d parse_mode="HTML" \
+            -d text="<b>DEPLOYMENT FAILED</b>%0A%0A<b>Repository:</b> <code>${{ github.repository }}</code>%0A<b>Branch:</b> <code>${{ github.ref_name }}</code>%0A<b>Commit:</b> <code>${{ github.sha }}</code>%0A<b>Author:</b> ${{ github.actor }}%0A%0AApplication deployment failed.%0A%0A<a href=\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\">View Action Details</a>"
 
 
   # ========================
@@ -356,5 +356,5 @@ jobs:
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d parse_mode="Markdown" \
-            -d text="*PIPELINE SUCCESS*%0A%0A*Repository:* \`${{ github.repository }}\`%0A*Branch:* \`${{ github.ref_name }}\`%0A*Commit:* \`${{ github.sha }}\`%0A*Author:* ${{ github.actor }}%0A%0A*Security Checks:*%0A- Secrets Scan: Passed (Gitleaks)%0A- Dependency Scan: Passed (Trivy)%0A- Container Scan: Passed (Trivy)%0A%0A*Build & Deploy:*%0A- Build & Test: Passed%0A- Docker Build: Completed%0A- Deployment: Successful%0A%0AApplication URL: http://localhost:3000%0A[View Action Details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})%0A%0AYour application is now live!"
+            -d parse_mode="HTML" \
+            -d text="<b>PIPELINE SUCCESS</b>%0A%0A<b>Repository:</b> <code>${{ github.repository }}</code>%0A<b>Branch:</b> <code>${{ github.ref_name }}</code>%0A<b>Commit:</b> <code>${{ github.sha }}</code>%0A<b>Author:</b> ${{ github.actor }}%0A%0A<b>Security Checks:</b>%0A- Secrets Scan: Passed (Gitleaks)%0A- Dependency Scan: Passed (Trivy)%0A- Container Scan: Passed (Trivy)%0A%0A<b>Build &amp; Deploy:</b>%0A- Build &amp; Test: Passed%0A- Docker Build: Completed%0A- Deployment: Successful%0A%0AApplication URL: http://localhost:3000%0A<a href=\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\">View Action Details</a>%0A%0AYour application is now live!"
