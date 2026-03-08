@@ -1,0 +1,30 @@
+[allowlist]
+paths = [
+    '''^\.git/''',
+    '''^node_modules/''',
+    '''^demo-scripts\.sh$''',
+    '''^branch-protection-setup\.md$'''
+]
+
+# Uncomment below for STRICT MODE:
+# [[rules]]
+# id = "any-password"
+# description = "Any Password Field"
+# regex = '''(?i)(password|pwd)\s*[=:]\s*["\'][^"\'\s]{3,}["\']'''
+#
+# [[rules]]
+# id = "any-username"
+# description = "Any Username Field"
+# regex = '''(?i)(username|user)\s*[=:]\s*["\'][^"\'\s]{3,}["\']'''
+#
+#
+# [[rules]]
+# id = "any-apikey"
+# description = "Any API Key Field"
+# regex = '''(?i)(apikey|api_key)\s*[=:]\s*["\'][^"\'\s]{3,}["\']'''
+
+[[rules]]
+id = "hardcoded-credentials"
+description = "Hardcoded credentials in config (catches fallback values in process.env patterns)"
+regex = '''(?i)(apiKey|api_key|password|pwd|secret|token|jwt|sessionSecret|databasePassword)\s*[:=]\s*.*?['"]([a-zA-Z0-9_@!#$%^&*()+=\-]{8,})['"]'''
+tags = ["secret", "credentials", "sast"]
