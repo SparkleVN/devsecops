@@ -1,470 +1,224 @@
-# CI/CD Pipeline Demo với GitHub Actions, Docker, Gitleaks và Trivy
+# CICD Pipeline Demo với GitHub Actions, Docker và Gitleaks
 
-## Giới thiệu
+## Mục tiêu
 
-Project này minh họa một **CI/CD pipeline hoàn chỉnh theo mô hình DevSecOps** sử dụng:
+Dự án này minh họa một CI/CD pipeline hoàn chỉnh sử dụng:
+- **GitHub Actions** cho automation
+- **Docker** cho containerization
+- **Gitleaks** cho security scanning (SAST)
+- **Telegram** cho notifications
 
-* **GitHub Actions** để chạy pipeline
-* **Gitleaks** để phát hiện secrets trong source code
-* **Trivy** để scan dependency và container image
-* **Docker** để build container
-* **Telegram Bot** để gửi thông báo pipeline
-* **Self-hosted Runner** để chạy pipeline trên server riêng
+## Yêu cầu
 
-Pipeline sẽ chạy tự động khi:
-
-```
-git push origin main
-```
-
-Workflow nằm trong:
-
-```
-.github/workflows/cicd.yml
-```
-
----
-
-# Kiến trúc Pipeline
-
-Pipeline được thiết kế giống sơ đồ:
-
-```
-Security Scan (Gitleaks)
-        │
-        ▼
-Dependency Scan (Trivy) ── Build & Test
-        │
-        ▼
-Docker Build & Push
-        │
-        ▼
-Container Image Scan (Trivy)
-        │
-        ▼
-Deploy Application
-        │
-        ▼
-Success Notification (Telegram)
-```
-
-Chi tiết:
-
-| Stage           | Công cụ          | Mục đích                 |
-| --------------- | ---------------- | ------------------------ |
-| Security Scan   | Gitleaks         | Detect hardcoded secrets |
-| Dependency Scan | Trivy            | Scan thư viện dễ bị CVE  |
-| Build & Test    | Node / Go / Java | Build application        |
-| Docker Build    | Docker           | Build container          |
-| Container Scan  | Trivy            | Scan lỗ hổng image       |
-| Deploy          | SSH / Script     | Deploy server            |
-| Notification    | Telegram         | Thông báo pipeline       |
-
----
-
-# 1. Tạo Telegram Bot
-
-Pipeline sẽ gửi thông báo qua Telegram.
-
-## Bước 1: tạo bot
-
-Mở Telegram và chat với:
-
-```
-@BotFather
-```
-
-Gửi lệnh:
-
-```
-/newbot
-```
-
-Sau đó BotFather sẽ yêu cầu:
-
-```
-Bot name
-Bot username
-```
-
-Sau khi tạo xong bạn sẽ nhận được:
-
-```
-Bot Token
-```
-
-Ví dụ:
-
-```
-7981513078:AAFxxxxxxxxxxxxxxxx
-```
-
-Lưu token này lại.
-
----
-
-# 2. Lấy Chat ID
-
-Gửi một tin nhắn bất kỳ cho bot.
-
-Sau đó mở:
-
-```
-https://api.telegram.org/bot<BOT_TOKEN>/getUpdates
-```
-
-Ví dụ:
-
-```
-https://api.telegram.org/bot7981513078:AAFxxx/getUpdates
-```
-
-Response sẽ chứa:
-
-```json
-"chat": {
-  "id": 123456789,
-  "type": "private"
-}
-```
-
-Giá trị:
-
-```
-123456789
-```
-
-chính là **Chat ID**.
-
----
-
-# 3. Tạo GitHub Repository
-
-Tạo repo mới trên GitHub.
-
-Clone repo về máy:
-
+### 1. Setup Repository
 ```bash
-git clone https://github.com/your-username/cicd-demo.git
-cd cicd-demo
-```
-
-Khởi tạo project:
-
-```bash
+# Clone hoặc tạo repo mới trên GitHub
 git init
 git add .
-git commit -m "initial commit"
+git commit -m "Initial commit"
 git branch -M main
-git push origin main
+git remote add origin https://github.com/your-username/cicd-demo.git
+git push -u origin main
 ```
 
----
+### 2. GitHub Secrets Configuration
 
-# 4. Set GitHub Secrets
+Để pipeline hoạt động, bạn cần setup các secrets sau trong GitHub repo:
 
-Pipeline cần Telegram credentials.
+#### 2.1. Telegram Bot Setup
+1. Tạo Telegram bot:
+   - Nhắn tin cho [@BotFather](https://t.me/botfather)
+   - Gửi `/newbot`
+   - Đặt tên và username cho bot
+   - Lưu **Bot Token**
 
-Vào:
+2. Lấy Chat ID:
+   - Add bot vào channel/group hoặc chat trực tiếp
+   - Gửi tin nhắn cho bot
+   - Truy cập: `https://api.telegram.org/bot<BOT_TOKEN>/getUpdates`
+   - Tìm `"chat":{"id":CHAT_ID}`
 
-```
-Repository → Settings → Secrets and variables → Actions
-```
+#### 2.2. Thêm Secrets vào GitHub
+Vào **Settings** → **Secrets and variables** → **Actions** → **New repository secret**:
 
-Tạo 2 secrets:
+- `TELEGRAM_BOT_TOKEN`: Token bot Telegram
+- `TELEGRAM_CHAT_ID`: Chat ID để nhận thông báo
 
-```
-TELEGRAM_BOT_TOKEN
-TELEGRAM_CHAT_ID
-```
+### 3. Container Registry Setup
+Pipeline sẽ tự động push Docker images lên GitHub Container Registry (ghcr.io).
 
-Ví dụ:
+## Kiến trúc Pipeline
 
-```
-TELEGRAM_BOT_TOKEN = 7981513078:AAFxxxx
-TELEGRAM_CHAT_ID = 123456789
-```
+[@Gitlab](https://scontent-sin11-1.xx.fbcdn.net/v/t39.30808-6/534314759_1232520465342123_342441881293326539_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=127cfc&_nc_eui2=AeH6uXCWhS6W4AgwwDfPtyvD7NzcdnxLNhjs3Nx2fEs2GJ4CwStGVqO3TqGjLutrFYWikZCiIwwTGwIUjG05EHgt&_nc_ohc=iyIpY9e14rIQ7kNvwFffCxb&_nc_oc=Adlb8r134gTgeC4ZZ78tqae0KiAda8sVvB2xAnYqAURu2_RsM9_IfiNBRbaSUWwj9eg&_nc_zt=23&_nc_ht=scontent-sin11-1.xx&_nc_gid=JySUaqYCjZqwA1TESkPp9Q&oh=00_AfX5EbuXdSIzi9DQ_-X6YD_DqG3zNFTWL8Up0xYVfQpwaA&oe=68B2071C)
 
----
+### CI Phase (Continuous Integration)
+```mermaid
+graph TD
+    A[Push/PR to main] --> B[Security Scan - Gitleaks]
+    B --> C[Build & Test]
+    C --> D[Docker Build & Push]
 
-# 5. Tạo Self-Hosted Runner
-
-Self-host runner giúp chạy pipeline trên server của bạn thay vì GitHub server.
-
-Vào:
-
-```
-Repository
-Settings
-Actions
-Runners
-New self-hosted runner
-```
-
-Chọn hệ điều hành:
-
-```
-Linux / MacOS / Windows
+    B -->|Secrets Found| E[Telegram Alert]
+    C -->|Build Failed| F[Telegram Alert]
+    D -->|Build Failed| G[Telegram Alert]
 ```
 
-Ví dụ với Linux:
+### CD Phase (Continuous Deployment)
+```mermaid
+graph TD
+    A[Docker Build Success] --> B[Deploy Application]
+    B --> C[Success Notification]
+    B -->|Deploy Failed| D[Telegram Alert]
+```
 
-Download runner:
+## Components Chi tiết
 
+### 1. **GitHub Actions Workflow** (`.github/workflows/cicd.yml`)
+- **security-scan**: Quét secrets bằng Gitleaks
+- **build-and-test**: Build và test ứng dụng
+- **docker-build**: Build và push Docker image
+- **deploy**: Deploy ứng dụng (simulation)
+- **notify-success**: Thông báo thành công
+
+### 2. **Webapp** (`app.js`)
+- Node.js Express server
+- Health check endpoint
+- API endpoints
+- Modern UI hiển thị thông tin pipeline
+
+### 3. **Docker Configuration**
+- `Dockerfile`: Multi-stage build với security best practices
+- `.dockerignore`: Loại trừ files không cần thiết
+- Health checks tích hợp
+
+### 4. **Security Scanning**
+- Gitleaks: Quét hardcoded secrets
+- Tự động fail pipeline nếu tìm thấy secrets
+- Alert qua Telegram
+
+## Testing Local
+
+### Chạy ứng dụng local:
 ```bash
-mkdir actions-runner && cd actions-runner
-curl -o actions-runner.tar.gz -L https://github.com/actions/runner/releases/latest/download/actions-runner-linux-x64.tar.gz
-tar xzf actions-runner.tar.gz
+npm install
+npm start
+# Truy cập http://localhost:3000
 ```
 
-Config runner:
-
+### Test Docker build:
 ```bash
-./config.sh --url https://github.com/your-username/cicd-demo --token YOUR_TOKEN
+docker build -t cicd-demo .
+docker run -p 3000:3000 cicd-demo
 ```
 
-Start runner:
-
+### Test với Docker Compose:
 ```bash
-./run.sh
+docker-compose up --build
 ```
 
-Runner sẽ online trong GitHub.
-
----
-
-# 6. Cấu trúc Project
-
-```
-cicd-demo
-│
-├── .github
-│   └── workflows
-│       └── cicd.yml
-│
-├── app.js
-├── package.json
-├── Dockerfile
-└── README.md
-```
-
----
-
-# 7. Workflow GitHub Actions
-
-File:
-
-```
-.github/workflows/cicd.yml
-```
-
-Ví dụ:
-
-```yaml
-name: CI/CD Pipeline
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-
-  security-scan:
-    runs-on: self-hosted
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-
-  dependency-scan:
-    runs-on: self-hosted
-    needs: security-scan
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Scan dependencies
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: fs
-          severity: CRITICAL,HIGH
-
-  build-test:
-    runs-on: self-hosted
-    needs: dependency-scan
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run tests
-        run: npm test
-
-  docker-build:
-    runs-on: self-hosted
-    needs: build-test
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build Docker Image
-        run: docker build -t cicd-demo .
-
-  container-scan:
-    runs-on: self-hosted
-    needs: docker-build
-
-    steps:
-      - name: Scan container image
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: cicd-demo
-
-  deploy:
-    runs-on: self-hosted
-    needs: container-scan
-
-    steps:
-      - name: Deploy application
-        run: |
-          docker stop cicd-demo || true
-          docker rm cicd-demo || true
-          docker run -d -p 3000:3000 --name cicd-demo cicd-demo
-
-  notify:
-    runs-on: self-hosted
-    needs: deploy
-
-    steps:
-      - name: Send Telegram Notification
-        run: |
-          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-          -d text="CI/CD Pipeline Success"
-```
-
----
-
-# 8. Dockerfile
-
-Ví dụ:
-
-```dockerfile
-FROM node:18-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-
-RUN npm install
-
-COPY . .
-
-EXPOSE 3000
-
-CMD ["node", "app.js"]
-```
-
----
-
-# 9. Trigger Pipeline
-
-Sau khi setup xong.
-
-Chỉ cần:
-
-```bash
-git add .
-git commit -m "update"
-git push origin main
-```
-
-GitHub Actions sẽ tự động chạy pipeline.
-
----
-
-# 10. Kết quả Pipeline
-
-Pipeline sẽ:
-
-1. Scan secrets bằng **Gitleaks**
-2. Scan dependencies bằng **Trivy**
-3. Build và test ứng dụng
-4. Build Docker image
-5. Scan container image
-6. Deploy container
-7. Gửi notification Telegram
-
-Nếu pipeline thành công bạn sẽ nhận được:
-
-```
-CI/CD Pipeline Success
-```
-
-trên Telegram.
-
----
-
-# 11. Demo Scenario
-
-## Success Case
-
-```
-git push
-↓
-Security Scan PASS
-↓
-Dependency Scan PASS
-↓
-Build PASS
-↓
-Docker Build PASS
-↓
-Image Scan PASS
-↓
-Deploy
-↓
-Telegram Success Message
-```
-
-## Failure Case
-
-Ví dụ commit secret:
-
-```
-AWS_SECRET_KEY=xxxx
-```
-
-Gitleaks sẽ detect:
-
-```
-Secret detected
-```
-
-Pipeline sẽ:
-
-```
-Fail
-Telegram alert
-```
-
----
-
-# 12. Best Practices
-
-Một số best practices được áp dụng:
-
-* Scan secrets trước khi build
-* Scan dependencies để phát hiện CVE
-* Scan container image
-* Fail pipeline nếu có security issue
-* Tách CI và CD stages
-* Dùng Telegram để alert realtime
-* Chạy pipeline trên self-hosted runner
-
----
+## Demo Scenarios
+
+### Success Scenario
+1. Tạo feature branch
+2. Commit clean code (không có secrets)
+3. Tạo Pull Request
+4. Merge vào main
+5. Pipeline chạy thành công → Telegram notification
+
+### Failure Scenario
+1. Commit code có hardcoded secrets
+2. Push lên main branch
+3. Gitleaks detect secrets
+4. Pipeline fail → Telegram alert
+
+## Kết quả Demo
+
+### Thành công:
+- Security scan passed
+- Build & test passed
+- Docker image built
+- Deployment successful
+- Telegram notification sent
+
+### Thất bại:
+- Gitleaks found secrets
+- Pipeline stopped
+- Telegram security alert sent
+
+## Monitoring & Alerts
+
+### Telegram Notifications bao gồm:
+- **Security Alerts**: Khi Gitleaks tìm thấy secrets
+- **Build Failures**: Lỗi trong quá trình build/test
+- **Docker Issues**: Lỗi build hoặc push image
+- **Deployment Failures**: Lỗi trong deployment
+- **Success Messages**: Thông báo pipeline thành công
+
+### Thông tin trong alerts:
+- Repository và branch
+- Commit hash và author
+- Link đến Action details
+- Loại lỗi cụ thể
+- Timestamp
+
+## CI vs CD Explanation
+
+### **CI (Continuous Integration)**
+- **Mục đích**: Tích hợp code changes liên tục
+- **Giai đoạn**:
+  - Security scanning (Gitleaks)
+  - Code testing
+  - Build application
+  - Docker image creation
+
+### **CD (Continuous Deployment)**
+- **Mục đích**: Deploy tự động lên production
+- **Giai đoạn**:
+  - Deploy application
+  - Health checks
+  - Success notifications
+
+## Tools & Công dụng
+
+| Tool | Công dụng | Phase |
+|------|-----------|-------|
+| **GitHub Actions** | Automation platform, orchestrate pipeline | CI/CD |
+| **Gitleaks** | SAST tool, scan hardcoded secrets | CI |
+| **Docker** | Containerization, consistent deployment | CI/CD |
+| **Telegram API** | Real-time notifications | CI/CD |
+| **Node.js/Express** | Web application framework | App |
+
+## Best Practices Implemented
+
+1. **Security First**: Gitleaks scanning trước khi build
+2. **Fail Fast**: Stop pipeline ngay khi có security issues
+3. **Multi-stage Docker**: Optimize image size và security
+4. **Non-root User**: Run container với user không phải root
+5. **Health Checks**: Monitor container health
+6. **Caching**: GitHub Actions cache để tăng tốc
+7. **Multi-platform**: Build cho cả AMD64 và ARM64
+8. **Real-time Alerts**: Thông báo ngay lập tức qua Telegram
+
+## Security Considerations
+
+- Secrets được store an toàn trong GitHub Secrets
+- Container chạy với non-root user
+- Dependencies được scan và update thường xuyên
+- Network security với proper port exposure
+- Container registry authentication
+
+## Workflow Triggers
+
+- **Push to main/master**: Full CI/CD pipeline
+- **Pull Request**: CI only (security + build + test)
+- **Manual trigger**: Có thể trigger manually từ GitHub UI
+
+## Learning Outcomes
+
+Sau khi complete project này, bạn sẽ hiểu:
+- Cách thiết kế và implement CI/CD pipeline
+- Security scanning integration (SAST)
+- Docker best practices
+- Infrastructure as Code với GitHub Actions
+- Real-time monitoring và alerting
+- DevOps workflows và automation
